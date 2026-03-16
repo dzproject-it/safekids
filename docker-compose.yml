@@ -1,0 +1,57 @@
+services:
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: qrkids-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: qrkids
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: qrkids_secret
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d qrkids"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── Backend (Node.js / Express) ─────────────────────────────────────────────
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: qrkids-backend
+    restart: unless-stopped
+    environment:
+      PORT: 3001
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: qrkids
+      DB_USER: postgres
+      DB_PASSWORD: qrkids_secret
+    ports:
+      - "3002:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ── Frontend (Vite build + Nginx) ───────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: qrkids-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+    networks:
+      default: {}
+
+volumes:
+  pgdata:
+
+networks:
+  default: {}
