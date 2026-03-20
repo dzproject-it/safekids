@@ -8,6 +8,7 @@ import * as S from '../../../styles/QRCustomizer.styles';
 interface QRCustomizerProps {
   productName: string;
   productId?: number;
+  onAddToCart?: () => void;
 }
 
 type QRTypeLocal = S.QRType;
@@ -30,37 +31,50 @@ interface MedicalData {
 
 // ── Helper : construit le contenu encodé dans le QR Code ────────────────────
 
+function buildMedicalNote(m: MedicalData): string {
+  const parts = [
+    m.childName   ? `Enfant : ${m.childName}` : '',
+    m.birthDate   ? `Né(e) le : ${m.birthDate}` : '',
+    m.bloodType   ? `Groupe sanguin : ${m.bloodType}` : '',
+    m.allergies   ? `Allergies : ${m.allergies}` : '',
+    m.doctor      ? `Médecin : ${m.doctor}` : '',
+    m.doctorPhone ? `Tél. médecin : ${m.doctorPhone}` : '',
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join('\\n') : '';
+}
+
 function buildQRContent(
   qrType: QRTypeLocal,
   contactData: ContactData,
   medicalData: MedicalData,
   textData: string,
-  linkData: string
 ): string {
   switch (qrType) {
-    case 'contact':
+    case 'contact': {
+      const medNote = buildMedicalNote(medicalData);
+      const noteLines = [
+        '⚠️ BRACELET SAFEKIDS ⚠️',
+        contactData.parentName ? `Contact : ${contactData.parentName}` : '',
+        contactData.phone1 ? `Tél : ${contactData.phone1}` : '',
+        contactData.phone2 ? `Tél 2 : ${contactData.phone2}` : '',
+        contactData.address ? `Adresse : ${contactData.address}` : '',
+        medNote ? `\\n--- FICHE MÉDICALE ---\\n${medNote}` : '',
+      ].filter(Boolean).join('\\n');
+
       return [
         'BEGIN:VCARD',
         'VERSION:3.0',
         `FN:${contactData.parentName || 'Parent/Tuteur'}`,
+        medicalData.childName ? `ORG:SafeKids - ${medicalData.childName}` : 'ORG:SafeKids',
         contactData.phone1 ? `TEL;TYPE=CELL:${contactData.phone1}` : '',
         contactData.phone2 ? `TEL;TYPE=WORK:${contactData.phone2}` : '',
         contactData.address ? `ADR:;;${contactData.address};;;;` : '',
+        `NOTE:${noteLines}`,
         'END:VCARD',
       ].filter(Boolean).join('\n');
-    case 'medical':
-      return [
-        `👦 ${medicalData.childName || 'Enfant'}`,
-        medicalData.birthDate   ? `🎂 ${medicalData.birthDate}` : '',
-        medicalData.bloodType   ? `🩸 ${medicalData.bloodType}` : '',
-        medicalData.allergies   ? `⚠️ Allergies: ${medicalData.allergies}` : '',
-        medicalData.doctor      ? `👨‍⚕️ Dr. ${medicalData.doctor}` : '',
-        medicalData.doctorPhone ? `📞 ${medicalData.doctorPhone}` : '',
-      ].filter(Boolean).join('\n');
+    }
     case 'text':
       return textData || 'Mon texte personnalisé';
-    case 'link':
-      return linkData ? `https://${linkData}` : 'https://';
     default:
       return '';
   }
@@ -68,7 +82,7 @@ function buildQRContent(
 
 // ── Composant ───────────────────────────────────────────────────────────────
 
-const QRCustomizer = ({ productName, productId }: QRCustomizerProps) => {
+const QRCustomizer = ({ productName, productId, onAddToCart }: QRCustomizerProps) => {
   const [qrType, setQrType]       = useState<QRTypeLocal>('contact');
   const [saving, setSaving]       = useState(false);
   const [saved, setSaved]         = useState(false);
@@ -85,7 +99,6 @@ const QRCustomizer = ({ productName, productId }: QRCustomizerProps) => {
   });
 
   const [textData, setTextData] = useState('');
-  const [linkData, setLinkData] = useState('');
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -93,8 +106,8 @@ const QRCustomizer = ({ productName, productId }: QRCustomizerProps) => {
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
-      const content = buildQRContent(qrType, contactData, medicalData, textData, linkData);
-      if (!content.trim() || content === 'https://') {
+      const content = buildQRContent(qrType, contactData, medicalData, textData);
+      if (!content.trim()) {
         setQrDataUrl('');
         return;
       }
@@ -111,13 +124,13 @@ const QRCustomizer = ({ productName, productId }: QRCustomizerProps) => {
       }
     }, 300);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [qrType, contactData, medicalData, textData, linkData]);
+  }, [qrType, contactData, medicalData, textData]);
+
+  const [showMedical, setShowMedical] = useState(false);
 
   const types: { id: QRTypeLocal; label: string; icon: string }[] = [
     { id: 'contact', label: 'Contact urgence',  icon: 'ri-phone-line' },
-    { id: 'medical', label: 'Fiche médicale',   icon: 'ri-heart-pulse-line' },
     { id: 'text',    label: 'Texte libre',       icon: 'ri-text' },
-    { id: 'link',    label: 'Lien web',          icon: 'ri-links-line' },
   ];
 
   const handleSave = async () => {
@@ -126,10 +139,8 @@ const QRCustomizer = ({ productName, productId }: QRCustomizerProps) => {
     setSaved(false);
 
     const payload: Record<string, string> =
-      qrType === 'contact' ? { ...contactData }
-      : qrType === 'medical' ? { ...medicalData }
-      : qrType === 'text'    ? { text: textData }
-      : { url: linkData };
+      qrType === 'contact' ? { ...contactData, ...medicalData }
+      : { text: textData };
 
     try {
       await saveQRProfile({ productId, qrType, payload });
@@ -142,9 +153,7 @@ const QRCustomizer = ({ productName, productId }: QRCustomizerProps) => {
     }
   };
 
-  const isEmpty =
-    buildQRContent(qrType, contactData, medicalData, textData, linkData).trim() === '' ||
-    buildQRContent(qrType, contactData, medicalData, textData, linkData) === 'https://';
+  const isEmpty = buildQRContent(qrType, contactData, medicalData, textData).trim() === '';
 
   // ── Rendu ────────────────────────────────────────────────────────────────
 
@@ -178,7 +187,7 @@ const QRCustomizer = ({ productName, productId }: QRCustomizerProps) => {
             ))}
           </div>
 
-          {/* Formulaire Contact */}
+          {/* Formulaire Contact + Médical fusionné */}
           {qrType === 'contact' && (
             <div className={S.fieldGroup}>
               <div>
@@ -205,57 +214,60 @@ const QRCustomizer = ({ productName, productId }: QRCustomizerProps) => {
                   onChange={(e) => setContactData({ ...contactData, address: e.target.value })}
                   className={S.input} />
               </div>
-            </div>
-          )}
 
-          {/* Formulaire Médical */}
-          {qrType === 'medical' && (
-            <div className={S.fieldGroup}>
-              <div className={S.fieldGrid2}>
-                <div>
-                  <label className={S.label}>Prénom de l'enfant</label>
-                  <input type="text" value={medicalData.childName} placeholder="Ex : Léa"
-                    onChange={(e) => setMedicalData({ ...medicalData, childName: e.target.value })}
-                    className={S.input} />
+              {/* Section médicale dépliable */}
+              <button type="button" onClick={() => setShowMedical(!showMedical)} className={S.medicalToggle(showMedical)}>
+                <i className={`ri-heart-pulse-line text-base ${showMedical ? 'text-rose-500' : 'text-gray-400'}`}></i>
+                <span>Fiche médicale</span>
+                <span className={S.medicalBadge}>Facultatif</span>
+                <i className={`ri-arrow-down-s-line text-lg transition-transform ${showMedical ? 'rotate-180' : ''}`}></i>
+              </button>
+
+              {showMedical && (
+                <div className={S.medicalSection}>
+                  <div>
+                    <label className={S.label}>Prénom de l'enfant</label>
+                    <input type="text" value={medicalData.childName} placeholder="Ex : Léa"
+                      onChange={(e) => setMedicalData({ ...medicalData, childName: e.target.value })}
+                      className={S.input} />
+                  </div>
+                  <div>
+                    <label className={S.label}>Date de naissance</label>
+                    <input type="date" value={medicalData.birthDate}
+                      onChange={(e) => setMedicalData({ ...medicalData, birthDate: e.target.value })}
+                      className={S.input} />
+                  </div>
+                  <div>
+                    <label className={S.label}>Groupe sanguin</label>
+                    <select value={medicalData.bloodType}
+                      onChange={(e) => setMedicalData({ ...medicalData, bloodType: e.target.value })}
+                      className={S.inputSelect}>
+                      <option value="">Sélectionner...</option>
+                      {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((g) => (
+                        <option key={g} value={g}>{g}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={S.label}>Allergies connues</label>
+                    <input type="text" value={medicalData.allergies} placeholder="Ex : Arachides, pénicilline..."
+                      onChange={(e) => setMedicalData({ ...medicalData, allergies: e.target.value })}
+                      className={S.input} />
+                  </div>
+                  <div>
+                    <label className={S.label}>Médecin traitant</label>
+                    <input type="text" value={medicalData.doctor} placeholder="Dr. Martin"
+                      onChange={(e) => setMedicalData({ ...medicalData, doctor: e.target.value })}
+                      className={S.input} />
+                  </div>
+                  <div>
+                    <label className={S.label}>Téléphone médecin</label>
+                    <input type="tel" value={medicalData.doctorPhone} placeholder="+33 1 23 45 67 89"
+                      onChange={(e) => setMedicalData({ ...medicalData, doctorPhone: e.target.value })}
+                      className={S.input} />
+                  </div>
                 </div>
-                <div>
-                  <label className={S.label}>Date de naissance</label>
-                  <input type="date" value={medicalData.birthDate}
-                    onChange={(e) => setMedicalData({ ...medicalData, birthDate: e.target.value })}
-                    className={S.input} />
-                </div>
-              </div>
-              <div>
-                <label className={S.label}>Groupe sanguin</label>
-                <select value={medicalData.bloodType}
-                  onChange={(e) => setMedicalData({ ...medicalData, bloodType: e.target.value })}
-                  className={S.inputSelect}>
-                  <option value="">Sélectionner...</option>
-                  {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((g) => (
-                    <option key={g} value={g}>{g}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className={S.label}>Allergies connues</label>
-                <input type="text" value={medicalData.allergies} placeholder="Ex : Arachides, pénicilline..."
-                  onChange={(e) => setMedicalData({ ...medicalData, allergies: e.target.value })}
-                  className={S.input} />
-              </div>
-              <div className={S.fieldGrid2}>
-                <div>
-                  <label className={S.label}>Médecin traitant</label>
-                  <input type="text" value={medicalData.doctor} placeholder="Dr. Martin"
-                    onChange={(e) => setMedicalData({ ...medicalData, doctor: e.target.value })}
-                    className={S.input} />
-                </div>
-                <div>
-                  <label className={S.label}>Téléphone médecin</label>
-                  <input type="tel" value={medicalData.doctorPhone} placeholder="+33 1 23 45 67 89"
-                    onChange={(e) => setMedicalData({ ...medicalData, doctorPhone: e.target.value })}
-                    className={S.input} />
-                </div>
-              </div>
+              )}
             </div>
           )}
 
@@ -270,20 +282,6 @@ const QRCustomizer = ({ productName, productId }: QRCustomizerProps) => {
             </div>
           )}
 
-          {/* Formulaire Lien */}
-          {qrType === 'link' && (
-            <div>
-              <label className={S.label}>URL du lien</label>
-              <div className={S.inputLinkWrapper}>
-                <span className={S.inputLinkPrefix}>https://</span>
-                <input type="url" value={linkData} placeholder="www.exemple.com"
-                  onChange={(e) => setLinkData(e.target.value)}
-                  className={S.inputLink} />
-              </div>
-              <p className={S.linkHint}>Le QR Code redirigera vers cette adresse lors du scan.</p>
-            </div>
-          )}
-
           {/* Bouton Sauvegarder */}
           {saveError && <p className={S.saveError}>{saveError}</p>}
           <button onClick={handleSave} disabled={saving || isEmpty} className={S.saveBtn(saved, saving || isEmpty)}>
@@ -295,6 +293,13 @@ const QRCustomizer = ({ productName, productId }: QRCustomizerProps) => {
               <><i className="ri-save-line text-lg"></i> Sauvegarder la personnalisation</>
             )}
           </button>
+
+          {/* Bouton Ajouter au panier — visible après sauvegarde */}
+          {saved && onAddToCart && (
+            <button onClick={onAddToCart} className={S.addToCartBtn}>
+              <i className="ri-shopping-bag-line text-lg"></i> Ajouter au panier
+            </button>
+          )}
         </div>
 
         {/* ── Colonne aperçu QR Code ── */}
@@ -320,14 +325,11 @@ const QRCustomizer = ({ productName, productId }: QRCustomizerProps) => {
                   {contactData.parentName && <p className={S.previewSummaryLine}><span className="font-semibold">👤</span> {contactData.parentName}</p>}
                   {contactData.phone1     && <p className={S.previewSummaryLine}><span className="font-semibold">📞</span> {contactData.phone1}</p>}
                   {contactData.address    && <p className={S.previewSummaryLine}><span className="font-semibold">📍</span> {contactData.address}</p>}
-                </>)}
-                {qrType === 'medical' && (<>
                   {medicalData.childName  && <p className={S.previewSummaryLine}><span className="font-semibold">👦</span> {medicalData.childName}</p>}
                   {medicalData.bloodType  && <p className={S.previewSummaryLine}><span className="font-semibold">🩸</span> {medicalData.bloodType}</p>}
                   {medicalData.allergies  && <p className={S.previewSummaryLine}><span className="font-semibold">⚠️</span> {medicalData.allergies}</p>}
                 </>)}
                 {qrType === 'text' && <p className={S.previewSummaryLineClamp}>{textData}</p>}
-                {qrType === 'link' && <p className={S.previewSummaryLine}>🔗 https://{linkData}</p>}
               </div>
             )}
 

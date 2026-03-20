@@ -75,7 +75,6 @@ const ProductGallery = ({ image, name, category, selectedColor }: ProductGallery
     <div className={S.wrapper}>
       <div
         className={S.mainImgContainer(getCategoryBg(category))}
-        style={{ height: 480 }}
         onClick={() => setZoomed(true)}
       >
         <img

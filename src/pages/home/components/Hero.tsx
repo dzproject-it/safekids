@@ -4,6 +4,7 @@ import * as S from '../../../styles/Hero.styles';
 
 const Hero = () => {
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -29,7 +30,7 @@ const Hero = () => {
             <div className={S.logoIcon}>
               <i className="ri-qr-code-line text-white text-xl"></i>
             </div>
-            <span className={S.logoText(scrolled)}>QR Kids</span>
+            <span className={S.logoText(scrolled)}>SafeKids</span>
           </div>
           <div className={S.navLinks(scrolled)}>
             <a href="#products" className={S.navLink}>Produits</a>
@@ -37,11 +38,23 @@ const Hero = () => {
             <a href="#testimonials" className={S.navLink}>Avis</a>
             <button onClick={scrollToProducts} className={S.orderBtn}>Commander</button>
           </div>
-          <button className={S.menuBtn}>
+          <button className={S.menuBtn} onClick={() => setMenuOpen(true)}>
             <i className={S.menuIcon(scrolled)}></i>
           </button>
         </div>
       </nav>
+
+      {/* Mobile Menu */}
+      <div className={S.mobileMenu(menuOpen)}>
+        <button className={S.mobileCloseBtn} onClick={() => setMenuOpen(false)}>
+          <i className="ri-close-line"></i>
+        </button>
+        <a href="#products" className={S.mobileMenuLink} onClick={() => setMenuOpen(false)}>Produits</a>
+        <a href="#features" className={S.mobileMenuLink} onClick={() => setMenuOpen(false)}>Fonctionnalités</a>
+        <a href="#testimonials" className={S.mobileMenuLink} onClick={() => setMenuOpen(false)}>Avis</a>
+        <Link to="/shop" className={S.mobileMenuLink} onClick={() => setMenuOpen(false)}>Boutique</Link>
+        <button onClick={() => { setMenuOpen(false); scrollToProducts(); }} className={S.mobileMenuBtn}>Commander</button>
+      </div>
 
       {/* Hero Background */}
       <div className={S.bgWrapper}>

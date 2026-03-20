@@ -1,0 +1,37 @@
+# ── Ingress : expose le frontend + proxy /api vers le backend ─────────────────
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: safekids-ingress
+  namespace: safekids
+  labels:
+    app.kubernetes.io/part-of: safekids
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.middlewares: safekids-redirect-https@kubernetescrd
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - safekids.87.106.4.161.nip.io
+      secretName: safekids-tls
+  rules:
+    - host: safekids.87.106.4.161.nip.io
+      http:
+        paths:
+          # API backend
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: safekids-backend
+                port:
+                  number: 3001
+          # Frontend (SPA)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: safekids-frontend
+                port:
+                  number: 80

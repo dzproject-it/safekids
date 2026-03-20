@@ -18,7 +18,7 @@ const Products = () => {
           <p className={S.eyebrow}>NOS COLLECTIONS</p>
           <h2 className={S.heading}>
             Bracelets QR Code<br />
-            Pour Tous Les Enfants
+            Pour Toute La Famille
           </h2>
         </div>
 

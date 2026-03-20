@@ -1,10 +1,14 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
 import { fetchProducts, createOrder, type Product, type QRProfileData } from '../../services/api';
 import ShopFilters from './components/ShopFilters';
 import ProductCard from './components/ProductCard';
 import CartDrawer from './components/CartDrawer';
 import * as S from '../../styles/shop.page.styles';
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || '');
 
 interface CartItem {
   id: number;
@@ -35,7 +39,7 @@ const ShopPage = () => {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100]);
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
     try {
-      const saved = localStorage.getItem('qrkids-cart');
+      const saved = localStorage.getItem('safekids-cart');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -57,8 +61,62 @@ const ShopPage = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  // Gestion du retour de redirection PayPal
   useEffect(() => {
-    localStorage.setItem('qrkids-cart', JSON.stringify(cartItems));
+    const params = new URLSearchParams(window.location.search);
+    const redirectStatus = params.get('redirect_status');
+    const paymentIntentParam = params.get('payment_intent');
+
+    if (!redirectStatus || !paymentIntentParam) return;
+
+    // Nettoyer l'URL
+    window.history.replaceState({}, '', window.location.pathname);
+
+    if (redirectStatus === 'succeeded') {
+      try {
+        const saved = sessionStorage.getItem('safekids-paypal-checkout');
+        if (saved) {
+          const { paymentIntentId, qrProfile } = JSON.parse(saved) as {
+            paymentIntentId: string;
+            qrProfile: { qrType: 'contact' | 'medical'; payload: Record<string, string> } | null;
+          };
+          sessionStorage.removeItem('safekids-paypal-checkout');
+
+          const cart: CartItem[] = JSON.parse(localStorage.getItem('safekids-cart') ?? '[]');
+          const items = cart.map((item) => ({
+            productId: item.id,
+            name: item.name,
+            unitPrice: item.price,
+            quantity: item.quantity,
+            color: item.color,
+            size: item.size,
+          }));
+          const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+          createOrder({
+            items,
+            totalAmount: total,
+            qrProfile: qrProfile ?? undefined,
+            paymentIntentId,
+          })
+            .then((order) => {
+              setCheckoutSuccess(order.id);
+              setCartItems([]);
+            })
+            .catch((err: unknown) => {
+              setCheckoutError(err instanceof Error ? err.message : 'Erreur lors de la commande');
+            });
+        }
+      } catch {
+        setCheckoutError('Erreur de traitement du paiement PayPal');
+      }
+    } else {
+      setCheckoutError('Le paiement PayPal a échoué. Veuillez réessayer.');
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('safekids-cart', JSON.stringify(cartItems));
   }, [cartItems]);
 
   const filteredProducts = useMemo(() => {
@@ -123,7 +181,7 @@ const ShopPage = () => {
     setCartItems((prev) => prev.filter((item) => getCartKey(item.id, item.color, item.size) !== cartKey));
   };
 
-  const handleCheckout = async (qrProfile: QRProfileData) => {
+  const handleCheckout = async (qrProfile: QRProfileData, paymentIntentId: string) => {
     setCheckoutLoading(true);
     setCheckoutError(null);
     setCheckoutSuccess(null);
@@ -139,10 +197,11 @@ const ShopPage = () => {
         })),
         totalAmount: cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
         qrProfile,
+        paymentIntentId,
       });
       setCheckoutSuccess(order.id);
       setCartItems([]);
-      localStorage.removeItem('qrkids-cart');
+      localStorage.removeItem('safekids-cart');
     } catch (err) {
       setCheckoutError(err instanceof Error ? err.message : 'Erreur lors de la commande');
     } finally {
@@ -175,12 +234,28 @@ const ShopPage = () => {
 
   return (
     <div className={S.page}>
+      {/* Notification retour paiement PayPal */}
+      {checkoutSuccess && !isCartOpen && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-50 border border-emerald-200 text-emerald-700 px-6 py-3 rounded-2xl shadow-lg flex items-center gap-3 text-sm font-medium animate-in fade-in">
+          <i className="ri-check-double-line text-lg"></i>
+          Commande #{checkoutSuccess} confirmée ! Merci pour votre achat.
+          <button onClick={() => setCheckoutSuccess(null)} className="ml-2 hover:text-emerald-900"><i className="ri-close-line"></i></button>
+        </div>
+      )}
+      {checkoutError && !isCartOpen && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-50 border border-red-200 text-red-700 px-6 py-3 rounded-2xl shadow-lg flex items-center gap-3 text-sm font-medium">
+          <i className="ri-error-warning-line text-lg"></i>
+          {checkoutError}
+          <button onClick={() => setCheckoutError(null)} className="ml-2 hover:text-red-900"><i className="ri-close-line"></i></button>
+        </div>
+      )}
+
       {/* Top Navigation */}
       <nav className={S.nav}>
         <div className={S.navContainer}>
           <Link to="/" className={S.logo}>
             <div className={S.logoIcon}><i className="ri-qr-code-line text-white text-lg"></i></div>
-            <span className={S.logoText}>QR Kids</span>
+            <span className={S.logoText}>SafeKids</span>
           </Link>
           <div className={S.navLinks}>
             <Link to="/" className={S.navLink}>Accueil</Link>
@@ -305,17 +380,19 @@ const ShopPage = () => {
       </div>
 
       {/* Cart Drawer */}
-      <CartDrawer
-        isOpen={isCartOpen}
-        items={cartItems}
-        onClose={() => setIsCartOpen(false)}
-        onUpdateQuantity={handleUpdateQuantity}
-        onRemove={handleRemove}
-        onCheckout={handleCheckout}
-        checkoutLoading={checkoutLoading}
-        checkoutError={checkoutError}
-        checkoutSuccess={checkoutSuccess}
-      />
+      <Elements stripe={stripePromise}>
+        <CartDrawer
+          isOpen={isCartOpen}
+          items={cartItems}
+          onClose={() => setIsCartOpen(false)}
+          onUpdateQuantity={handleUpdateQuantity}
+          onRemove={handleRemove}
+          onCheckout={handleCheckout}
+          checkoutLoading={checkoutLoading}
+          checkoutError={checkoutError}
+          checkoutSuccess={checkoutSuccess}
+        />
+      </Elements>
     </div>
   );
 };

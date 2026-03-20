@@ -1,11 +1,11 @@
 // ── Testimonials ──────────────────────────────────────────────────────────────
 
-export const section    = 'py-24 bg-gray-50';
-export const container  = 'max-w-7xl mx-auto px-6';
+export const section    = 'py-12 sm:py-16 md:py-24 bg-gray-50';
+export const container  = 'max-w-7xl mx-auto px-4 sm:px-6';
 export const badge      = 'inline-block bg-primary text-white px-4 py-2 rounded-full text-sm font-bold mb-6';
-export const heading    = 'font-display font-black text-5xl md:text-6xl text-dark leading-tight';
-export const grid       = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
-export const card       = 'bg-white rounded-3xl p-8 shadow-sm hover:shadow-xl transition-all duration-300';
+export const heading    = 'font-display font-black text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-dark leading-tight';
+export const grid       = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6';
+export const card       = 'bg-white rounded-3xl p-5 sm:p-6 md:p-8 shadow-sm hover:shadow-xl transition-all duration-300';
 export const cardHeader = 'flex items-center space-x-4 mb-6';
 export const avatarBg   = (color: string) => `w-12 h-12 ${color} rounded-full flex items-center justify-center text-white font-bold`;
 export const authorName = 'font-semibold text-dark';

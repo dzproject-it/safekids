@@ -5,6 +5,7 @@ server/node_modules/
 # Build outputs
 dist/
 build/
+out/
 coverage/
 
 # Environment files

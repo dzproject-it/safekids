@@ -13,7 +13,7 @@ interface ShopFiltersProps {
   totalResults: number;
 }
 
-const sizes = ['Tous', 'XS', 'S', 'M', 'L'];
+const sizes = ['Tous', 'XS', 'S', 'M', 'L', 'XL'];
 
 const ShopFilters = ({
   activeCategory,

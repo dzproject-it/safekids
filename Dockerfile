@@ -9,6 +9,8 @@ RUN npm ci
 COPY . .
 # En Docker, l'API est proxifiée par nginx → chaîne vide = URLs relatives /api/...
 ENV VITE_API_URL=
+ARG VITE_STRIPE_PUBLIC_KEY=
+ENV VITE_STRIPE_PUBLIC_KEY=$VITE_STRIPE_PUBLIC_KEY
 RUN npm run build
 
 # ── Étape 2 : Serve avec Nginx ────────────────────────────────────────────────

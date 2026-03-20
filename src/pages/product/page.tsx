@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
 import { fetchProduct, fetchProducts, type Product, type QRProfileData } from '../../services/api';
 import ProductGallery from './components/ProductGallery';
 import QRCustomizer from './components/QRCustomizer';
 import CartDrawer from '../shop/components/CartDrawer';
 import * as S from '../../styles/product.page.styles';
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || '');
 
 interface CartItem {
   id: number;
@@ -76,7 +80,7 @@ const ProductPage = () => {
   const [scrolled, setScrolled] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
     try {
-      const saved = localStorage.getItem('qrkids-cart');
+      const saved = localStorage.getItem('safekids-cart');
       return saved ? JSON.parse(saved) : [];
     } catch { return []; }
   });
@@ -135,7 +139,7 @@ const ProductPage = () => {
       const updated = existing
         ? prev.map((item) => getCartKey(item.id, item.color, item.size) === cartKey ? { ...item, quantity: item.quantity + quantity } : item)
         : [...prev, { id: product.id, name: product.name, price: product.price, image: product.image, quantity, color: selectedColor, size: selectedSize }];
-      localStorage.setItem('qrkids-cart', JSON.stringify(updated));
+      localStorage.setItem('safekids-cart', JSON.stringify(updated));
       return updated;
     });
     setAddedToCart(true);
@@ -148,7 +152,7 @@ const ProductPage = () => {
       const updated = qty <= 0
         ? prev.filter((item) => getCartKey(item.id, item.color, item.size) !== cartKey)
         : prev.map((item) => getCartKey(item.id, item.color, item.size) === cartKey ? { ...item, quantity: qty } : item);
-      localStorage.setItem('qrkids-cart', JSON.stringify(updated));
+      localStorage.setItem('safekids-cart', JSON.stringify(updated));
       return updated;
     });
   };
@@ -156,7 +160,7 @@ const ProductPage = () => {
   const handleRemoveCart = (cartKey: string) => {
     setCartItems((prev) => {
       const updated = prev.filter((item) => getCartKey(item.id, item.color, item.size) !== cartKey);
-      localStorage.setItem('qrkids-cart', JSON.stringify(updated));
+      localStorage.setItem('safekids-cart', JSON.stringify(updated));
       return updated;
     });
   };
@@ -170,7 +174,7 @@ const ProductPage = () => {
             <div className={S.logoIcon}>
               <i className="ri-qr-code-line text-white text-xl"></i>
             </div>
-            <span className={S.logoText}>QR Kids</span>
+            <span className={S.logoText}>SafeKids</span>
           </Link>
           <div className={S.navRight}>
             <Link to="/#products" className={S.navLink}>
@@ -220,7 +224,7 @@ const ProductPage = () => {
             <div>
               <div className="flex items-center gap-3 mb-3">
                 <span className={S.categoryBadge(product.category)}>
-                  {product.category === 'girl' ? 'Fille' : product.category === 'boy' ? 'Garçon' : 'Unisexe'}
+                  {product.category === 'girl' ? 'Fille' : product.category === 'boy' ? 'Garçon' : product.category === 'adult' ? 'Adulte' : product.category === 'medical' ? 'Santé' : 'Unisexe'}
                 </span>
                 {product.oldPrice && (
                   <span className={S.promoBadge}>Promo</span>
@@ -328,35 +332,6 @@ const ProductPage = () => {
               </p>}
             </div>
 
-            {/* Quantity + Add to Cart */}
-            <div className={S.addToCartRow}>
-              <div className={S.qtyWrapper}>
-                <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className={S.qtyBtn}
-                >
-                  <i className="ri-subtract-line"></i>
-                </button>
-                <span className={S.qtyValue}>{quantity}</span>
-                <button
-                  onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                  className={S.qtyBtn}
-                >
-                  <i className="ri-add-line"></i>
-                </button>
-              </div>
-              <button
-                onClick={handleAddToCart}
-                className={S.addBtn(addedToCart)}
-              >
-                {addedToCart ? (
-                  <><i className="ri-check-line text-lg"></i> Ajouté au panier !</>
-                ) : (
-                  <><i className="ri-shopping-bag-line text-lg"></i> Ajouter au panier</>
-                )}
-              </button>
-            </div>
-
             {/* Stock */}
             <div className={S.stockRow}>
               <div className={S.stockDot(product.stock > 10)}></div>
@@ -393,7 +368,7 @@ const ProductPage = () => {
             </p>
           </div>
           <div className={S.qrWrapper}>
-            <QRCustomizer productName={product.name} productId={product.id} />
+            <QRCustomizer productName={product.name} productId={product.id} onAddToCart={handleAddToCart} />
           </div>
         </div>
 
@@ -430,9 +405,9 @@ const ProductPage = () => {
             <div className={S.footerLogoIcon}>
               <i className="ri-qr-code-line text-white text-sm"></i>
             </div>
-            <span className={S.footerLogoText}>QR Kids</span>
+            <span className={S.footerLogoText}>SafeKids</span>
           </Link>
-          <p className={S.footerCopyright}>© {new Date().getFullYear()} QR Kids. Tous droits réservés.</p>
+          <p className={S.footerCopyright}>© {new Date().getFullYear()} SafeKids. Tous droits réservés.</p>
           <div className={S.footerLinks}>
             <a href="#" className={S.footerLink}>CGV</a>
             <a href="#" className={S.footerLink}>Confidentialité</a>
@@ -441,14 +416,16 @@ const ProductPage = () => {
         </div>
       </footer>
 
-      <CartDrawer
-        isOpen={isCartOpen}
-        items={cartItems}
-        onClose={() => setIsCartOpen(false)}
-        onUpdateQuantity={handleUpdateQuantity}
-        onRemove={handleRemoveCart}
-        onCheckout={(_qrProfile: QRProfileData) => setIsCartOpen(false)}
-      />
+      <Elements stripe={stripePromise}>
+        <CartDrawer
+          isOpen={isCartOpen}
+          items={cartItems}
+          onClose={() => setIsCartOpen(false)}
+          onUpdateQuantity={handleUpdateQuantity}
+          onRemove={handleRemoveCart}
+          onCheckout={() => setIsCartOpen(false)}
+        />
+      </Elements>
     </div>
   );
 };

@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: safekids-backend-config
+  namespace: safekids
+  labels:
+    app.kubernetes.io/part-of: safekids
+    app.kubernetes.io/component: backend
+data:
+  PORT: "3001"
+  DB_HOST: safekids-postgres
+  DB_PORT: "5432"
+  DB_NAME: safekids
+  DB_USER: postgres
+  CORS_ORIGINS: "https://safekids.87.106.4.161.nip.io,http://safekids.87.106.4.161.nip.io"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: safekids-nginx-config
+  namespace: safekids
+  labels:
+    app.kubernetes.io/part-of: safekids
+    app.kubernetes.io/component: frontend
+data:
+  default.conf: |
+    server {
+        listen 80;
+        server_name _;
+        root /usr/share/nginx/html;
+        index index.html;
+
+        gzip on;
+        gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+        location / {
+            try_files $uri $uri/ /index.html;
+        }
+    }

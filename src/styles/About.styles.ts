@@ -1,15 +1,15 @@
 // ── About ────────────────────────────────────────────────────────────────────
 
-export const section      = 'py-24 bg-white';
-export const container    = 'max-w-7xl mx-auto px-6';
-export const grid         = 'grid grid-cols-1 lg:grid-cols-2 gap-12 xl:gap-16 items-center';
+export const section      = 'py-12 sm:py-16 md:py-24 bg-white';
+export const container    = 'max-w-7xl mx-auto px-4 sm:px-6';
+export const grid         = 'grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 xl:gap-16 items-center';
 export const leftCol      = 'min-w-0';
-export const heading      = 'font-display font-extrabold text-5xl md:text-6xl text-dark leading-tight mb-12';
-export const statsRow     = 'grid grid-cols-3 divide-x divide-gray-300 max-w-2xl';
-export const statItem     = 'min-w-0 px-4 sm:px-6 first:pl-0';
-export const statNumber   = 'text-3xl sm:text-4xl md:text-5xl font-black text-primary mb-2 leading-none';
-export const statLabel    = 'text-gray-medium text-sm font-medium';
-export const rightCol     = 'relative h-80 sm:h-96';
+export const heading      = 'font-display font-extrabold text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-dark leading-tight mb-8 sm:mb-10 md:mb-12';
+export const statsRow     = 'flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-4 sm:gap-y-6 max-w-2xl';
+export const statItem     = 'min-w-[70px] sm:min-w-[90px] md:min-w-[140px] px-2 sm:px-4 md:px-6 first:pl-0 border-r border-gray-300 last:border-r-0';
+export const statNumber   = 'whitespace-nowrap text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-primary mb-1 sm:mb-2 leading-none';
+export const statLabel    = 'text-gray-medium text-xs sm:text-sm font-medium';
+export const rightCol     = 'relative h-56 sm:h-80 md:h-96';
 export const decorBg      = 'absolute inset-0 bg-gradient-to-br from-pink-100 via-white to-blue-50 rounded-3xl overflow-hidden';
 export const blob1        = 'absolute top-10 left-10 w-32 h-32 bg-primary/20 rounded-full blur-2xl';
 export const blob2        = 'absolute top-20 right-20 w-40 h-40 bg-secondary/20 rounded-full blur-3xl';

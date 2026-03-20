@@ -3,40 +3,51 @@ import pool from '../db.js';
 
 const router = Router();
 
+// Validation email basique (RFC 5322 simplifié)
+const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/;
+
 // POST /api/orders — crée une commande avec ses lignes
-// Body: { items: [{ productId, name, unitPrice, quantity, color?, size? }], totalAmount, customerEmail?, customerName?, qrProfile?: { qrType, payload } }
 router.post('/', async (req, res) => {
   const { items, totalAmount, customerEmail, customerName, qrProfile } = req.body;
 
-  if (!Array.isArray(items) || items.length === 0) {
-    return res.status(400).json({ error: 'Le panier est vide' });
+  if (!Array.isArray(items) || items.length === 0 || items.length > 50) {
+    return res.status(400).json({ error: 'Le panier est vide ou trop volumineux' });
   }
 
-  if (typeof totalAmount !== 'number' || totalAmount <= 0) {
+  if (typeof totalAmount !== 'number' || totalAmount <= 0 || totalAmount > 999999) {
     return res.status(400).json({ error: 'Montant total invalide' });
   }
 
+  if (customerEmail && (typeof customerEmail !== 'string' || !EMAIL_RE.test(customerEmail))) {
+    return res.status(400).json({ error: 'Email invalide' });
+  }
+
+  if (customerName && (typeof customerName !== 'string' || customerName.length > 255)) {
+    return res.status(400).json({ error: 'Nom trop long (255 max)' });
+  }
+
   for (const item of items) {
-    if (typeof item.quantity !== 'number' || item.quantity <= 0) {
+    if (typeof item.quantity !== 'number' || item.quantity <= 0 || item.quantity > 9999) {
       return res.status(400).json({ error: 'Quantité invalide' });
     }
-    if (typeof item.unitPrice !== 'number' || item.unitPrice < 0) {
+    if (typeof item.unitPrice !== 'number' || item.unitPrice < 0 || item.unitPrice > 999999) {
       return res.status(400).json({ error: 'Prix unitaire invalide' });
     }
+    if (item.name && (typeof item.name !== 'string' || item.name.length > 500)) {
+      return res.status(400).json({ error: 'Nom de produit trop long' });
+    }
+  }
+
+  if (qrProfile?.payload && JSON.stringify(qrProfile.payload).length > 10240) {
+    return res.status(413).json({ error: 'Payload QR trop volumineux (10 Ko max)' });
   }
 
   let client;
   try {
     client = await pool.connect();
   } catch (err) {
-    console.warn('DB indisponible, commande simulée :', err.message);
-    return res.status(201).json({
-      id: Math.floor(Math.random() * 100000),
-      status: 'pending',
-      totalAmount,
-      qrProfileId: qrProfile ? Math.floor(Math.random() * 100000) : null,
-      createdAt: new Date().toISOString(),
-    });
+    console.error('DB indisponible pour création de commande :', err.message);
+    return res.status(503).json({ error: 'Service temporairement indisponible' });
   }
 
   try {

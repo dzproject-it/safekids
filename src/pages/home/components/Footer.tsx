@@ -13,7 +13,7 @@ const Footer = () => {
               <div className={S.brandLogoIcon}>
                 <i className="ri-qr-code-line text-white text-2xl"></i>
               </div>
-              <span className={S.brandName}>QR Kids</span>
+              <span className={S.brandName}>SafeKids</span>
             </div>
             <p className={S.brandDesc}>
               La solution innovante pour la sécurité de vos enfants. Des bracelets QR Code personnalisables qui vous apportent la tranquillité d'esprit au quotidien.
@@ -43,9 +43,9 @@ const Footer = () => {
                 <i className="ri-phone-line"></i>
                 <span className="text-sm">+33 1 23 45 67 89</span>
               </a>
-              <a href="mailto:contact@qrkids.fr" className={S.contactLink}>
+              <a href="mailto:contact@safekids.fr" className={S.contactLink}>
                 <i className="ri-mail-line"></i>
-                <span className="text-sm">contact@qrkids.fr</span>
+                <span className="text-sm">contact@safekids.fr</span>
               </a>
             </div>
           </div>
@@ -66,7 +66,7 @@ const Footer = () => {
         <div className={S.bottomBar}>
           <div className={S.bottomRow}>
             <p className={S.copyright}>
-              © {currentYear} QR Kids. Tous droits réservés.
+              © {currentYear} SafeKids. Tous droits réservés.
             </p>
             <div className={S.legalLinks}>
               <a href="#" className={S.legalLink}>Conditions Générales</a>

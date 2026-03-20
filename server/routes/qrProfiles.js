@@ -4,17 +4,23 @@ import pool from '../db.js';
 const router = Router();
 
 const ALLOWED_TYPES = ['contact', 'medical', 'text', 'link'];
+const MAX_PAYLOAD_SIZE = 10240; // 10 Ko
 
 // POST /api/qr-profiles — sauvegarde ou met à jour un profil QR
-// Body: { productId?, qrType, payload }
 router.post('/', async (req, res) => {
   const { productId, qrType, payload } = req.body;
 
   if (!ALLOWED_TYPES.includes(qrType)) {
     return res.status(400).json({ error: 'Type QR invalide' });
   }
-  if (!payload || typeof payload !== 'object') {
-    return res.status(400).json({ error: 'Payload manquant' });
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return res.status(400).json({ error: 'Payload manquant ou invalide' });
+  }
+  if (JSON.stringify(payload).length > MAX_PAYLOAD_SIZE) {
+    return res.status(413).json({ error: 'Payload trop volumineux (10 Ko max)' });
+  }
+  if (productId != null && (typeof productId !== 'number' || productId <= 0)) {
+    return res.status(400).json({ error: 'productId invalide' });
   }
 
   try {
@@ -45,13 +51,8 @@ router.post('/', async (req, res) => {
     );
     res.status(201).json({ id: created.id, qrType: created.qr_type, createdAt: created.created_at });
   } catch (err) {
-    console.warn('DB indisponible, profil QR simulé :', err.message);
-    // Mode mock : réponse simulée
-    res.status(201).json({
-      id: Math.floor(Math.random() * 100000),
-      qrType,
-      createdAt: new Date().toISOString(),
-    });
+    console.error('Erreur création profil QR :', err.message);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 

@@ -1,7 +1,7 @@
 // ── CartDrawer ────────────────────────────────────────────────────────────────
 
 export const overlay       = 'fixed inset-0 bg-black/40 z-40 backdrop-blur-sm';
-export const drawer        = (isOpen: boolean) => `fixed top-0 right-0 h-full w-full max-w-md bg-white z-50 shadow-2xl flex flex-col transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`;
+export const drawer        = (isOpen: boolean) => `fixed top-0 right-0 h-full w-full sm:max-w-md bg-white z-50 shadow-2xl flex flex-col transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`;
 export const header        = 'flex items-center justify-between px-6 py-5 border-b border-gray-100';
 export const titleRow      = 'flex items-center gap-3';
 export const titleIcon     = 'w-8 h-8 flex items-center justify-center';
@@ -14,7 +14,7 @@ export const emptyIconBox  = 'w-20 h-20 bg-gray-100 rounded-full flex items-cent
 export const emptyTitle    = 'font-display font-semibold text-dark mb-2';
 export const emptySubtitle = 'text-sm text-gray-400';
 export const itemList      = 'space-y-4';
-export const item          = 'flex gap-4 bg-gray-50 rounded-2xl p-3';
+export const item          = 'flex gap-3 sm:gap-4 bg-gray-50 rounded-2xl p-3';
 export const itemImgBox    = 'w-20 h-20 bg-white rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center';
 export const itemImg       = 'w-full h-full object-contain p-1';
 export const itemInfo      = 'flex-1 min-w-0';
@@ -22,9 +22,9 @@ export const itemName      = 'font-medium text-dark text-sm leading-snug mb-1 tr
 export const itemPrice     = 'text-primary font-bold text-sm mb-2';
 export const itemActions   = 'flex items-center justify-between';
 export const qtyBox        = 'flex items-center gap-2 bg-white rounded-full px-2 py-1 shadow-sm';
-export const qtyBtn        = 'w-5 h-5 flex items-center justify-center text-gray-500 hover:text-dark transition-colors cursor-pointer';
+export const qtyBtn        = 'w-7 h-7 flex items-center justify-center text-gray-500 hover:text-dark transition-colors cursor-pointer';
 export const qtyValue      = 'text-sm font-semibold text-dark w-4 text-center';
-export const removeBtn     = 'w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-50 text-gray-400 hover:text-red-400 transition-all cursor-pointer';
+export const removeBtn     = 'w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50 text-gray-400 hover:text-red-400 transition-all cursor-pointer';
 export const itemMeta      = 'flex items-center gap-1 flex-wrap mt-1 mb-2';
 export const itemTag       = 'text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium';
 export const footer        = 'px-6 py-5 border-t border-gray-100 space-y-4';
@@ -36,22 +36,3 @@ export const successBox    = 'bg-emerald-50 border border-emerald-200 rounded-xl
 export const checkoutBtn   = 'w-full bg-dark text-white py-4 rounded-2xl font-semibold text-base hover:bg-primary transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed';
 export const spinner       = 'w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin';
 export const secureNote    = 'text-center text-xs text-gray-400 flex items-center justify-center gap-1';
-
-// ── Step QR Code ─────────────────────────────────────────────────────────────
-export const qrStep        = 'flex flex-col h-full';
-export const qrStepHeader  = 'flex items-center gap-3 px-6 py-5 border-b border-gray-100';
-export const qrBackBtn     = 'w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-all cursor-pointer text-gray-500';
-export const qrStepTitle   = 'font-display font-bold text-base text-dark';
-export const qrStepBody    = 'flex-1 overflow-y-auto px-6 py-5 space-y-5';
-export const qrTypeRow     = 'flex gap-2';
-export const qrTypeBtn     = (active: boolean) => `flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold border-2 transition-all cursor-pointer ${active ? 'bg-dark text-white border-dark' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`;
-export const qrSectionTitle = 'text-xs font-bold uppercase tracking-wider text-gray-400 mb-3';
-export const qrFieldGroup  = 'space-y-3';
-export const qrField       = '';
-export const qrLabel       = 'text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block';
-export const qrInput       = 'w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-gray-800 bg-gray-50';
-export const qrGrid2       = 'grid grid-cols-2 gap-3';
-export const qrHint        = 'text-xs text-gray-400 mt-1';
-export const qrStepFooter  = 'px-6 py-5 border-t border-gray-100';
-export const qrConfirmBtn  = 'w-full bg-dark text-white py-4 rounded-2xl font-semibold text-base hover:bg-primary transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed';
-export const qrSkipBtn     = 'w-full mt-2 text-center text-sm text-gray-400 hover:text-gray-600 cursor-pointer py-1 transition-colors';
